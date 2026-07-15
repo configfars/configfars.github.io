@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+    <script src="file:///android_asset/qrcode.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: transparent;
+        }
+
+        #qrcode canvas {
+            border-radius: 28px;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.2);
+            width: auto;
+            height: auto;
+            max-width: 100%;
+        }
+    </style>
+
+    <script>
+        function getCanvasImage() {
+            var canvas = document.querySelector('#qrcode canvas');
+            if (canvas) {
+                Android.setImageData(canvas.toDataURL('image/png'));
+            }
+        }
+    </script>
+</head>
+
+<body>
+
+<div id="qrcode"></div>
+
+<script>
+    new QRCode(document.getElementById('qrcode'), {
+        text: "YOUR_TEXT",
+        width: 320,
+        height: 320,
+        colorDark: "#0f172a",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+    });
+
+    setTimeout(function () {
+        getCanvasImage();
+    }, 400);
+</script>
+
+</body>
+</html>
