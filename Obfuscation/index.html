@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JavaScript Obfuscator</title>
+
+<style>
+body{
+    margin:0;
+    background:#0f172a;
+    color:#fff;
+    font-family:Arial,sans-serif;
+}
+.container{
+    max-width:1200px;
+    margin:auto;
+    padding:20px;
+}
+h1{
+    text-align:center;
+}
+textarea{
+    width:100%;
+    height:280px;
+    background:#1e293b;
+    color:#fff;
+    border:1px solid #334155;
+    border-radius:10px;
+    padding:12px;
+    resize:vertical;
+    font-family:monospace;
+    font-size:14px;
+}
+button{
+    margin:15px 0;
+    padding:12px 24px;
+    border:none;
+    border-radius:10px;
+    background:#2563eb;
+    color:white;
+    cursor:pointer;
+    font-size:16px;
+}
+button:hover{
+    background:#1d4ed8;
+}
+label{
+    display:block;
+    margin:8px 0;
+}
+</style>
+
+<script src="index.browser.js"></script>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>JavaScript Obfuscator</h1>
+
+<h3>Input</h3>
+<textarea id="input"></textarea>
+
+<label><input type="checkbox" id="flatten" checked> Control Flow Flattening</label>
+<label><input type="checkbox" id="dead" checked> Dead Code Injection</label>
+<label><input type="checkbox" id="debug"> Debug Protection</label>
+<label><input type="checkbox" id="self"> Self Defending</label>
+
+<button onclick="run()">Obfuscate</button>
+
+<h3>Output</h3>
+<textarea id="output"></textarea>
+
+</div>
+
+<script>
+function run(){
+
+const code=document.getElementById("input").value;
+
+const result=JavaScriptObfuscator.obfuscate(code,{
+
+compact:true,
+
+controlFlowFlattening:
+document.getElementById("flatten").checked,
+
+controlFlowFlatteningThreshold:1,
+
+deadCodeInjection:
+document.getElementById("dead").checked,
+
+deadCodeInjectionThreshold:1,
+
+stringArray:true,
+
+stringArrayEncoding:["rc4"],
+
+stringArrayShuffle:true,
+
+splitStrings:true,
+
+splitStringsChunkLength:8,
+
+renameGlobals:false,
+
+identifierNamesGenerator:"hexadecimal",
+
+numbersToExpressions:true,
+
+selfDefending:
+document.getElementById("self").checked,
+
+debugProtection:
+document.getElementById("debug").checked,
+
+disableConsoleOutput:true,
+
+unicodeEscapeSequence:false
+
+});
+
+document.getElementById("output").value=result.getObfuscatedCode();
+
+}
+</script>
+
+</body>
+</html>
