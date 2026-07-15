@@ -1,496 +1,670 @@
-:root {
-  color-scheme: dark;
+"use strict";
 
-  --background: #07111f;
-  --surface: rgba(14, 29, 48, 0.88);
-  --surface-light: rgba(24, 45, 69, 0.75);
-  --border: rgba(148, 163, 184, 0.18);
-  --text: #f8fafc;
-  --muted: #94a3b8;
-  --primary: #38bdf8;
-  --primary-dark: #0284c7;
-  --success: #22c55e;
-  --danger: #ef4444;
-  --warning: #f59e0b;
-  --unknown: #64748b;
-  --shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
-}
+const IP_API_BASE = "https://ipwho.is/";
+const COUNTRY_API_BASE = "https://restcountries.com/v3.1/alpha/";
+const DNS_API_BASE = "https://cloudflare-dns.com/dns-query";
 
-* {
-  box-sizing: border-box;
-}
+const form = document.querySelector("#ip-form");
+const ipInput = document.querySelector("#ip-input");
+const searchButton = document.querySelector("#search-button");
+const myIpButton = document.querySelector("#my-ip-button");
+const copyButton = document.querySelector("#copy-button");
+const resultElement = document.querySelector("#result");
+const resultIp = document.querySelector("#result-ip");
+const infoGrid = document.querySelector("#info-grid");
+const securityGrid = document.querySelector("#security-grid");
+const statusElement = document.querySelector("#status");
+const rawOutput = document.querySelector("#raw-output");
+const osmLink = document.querySelector("#osm-link");
 
-html {
-  scroll-behavior: smooth;
-}
+let map = null;
+let mapMarker = null;
+let lastResult = null;
 
-body {
-  min-height: 100vh;
-  margin: 0;
-  color: var(--text);
-  background:
-    radial-gradient(
-      circle at top right,
-      rgba(14, 165, 233, 0.18),
-      transparent 30rem
-    ),
-    radial-gradient(
-      circle at bottom left,
-      rgba(139, 92, 246, 0.14),
-      transparent 28rem
-    ),
-    var(--background);
-  font-family:
-    Tahoma,
-    Arial,
-    sans-serif;
-  line-height: 1.8;
-}
+const INFO_FIELDS = [
+  { key: "ip", label: "آدرس IP", ltr: true },
+  { key: "type", label: "نوع IP", ltr: true },
+  { key: "country", label: "کشور" },
+  { key: "countryCode", label: "کد کشور", ltr: true },
+  { key: "continent", label: "قاره" },
+  { key: "city", label: "شهر" },
+  { key: "region", label: "استان / Region" },
+  { key: "postal", label: "کد پستی", ltr: true },
+  { key: "latitude", label: "Latitude", ltr: true },
+  { key: "longitude", label: "Longitude", ltr: true },
+  { key: "timezone", label: "منطقه زمانی", ltr: true },
+  { key: "utc", label: "اختلاف UTC", ltr: true },
+  { key: "isp", label: "ISP", ltr: true },
+  { key: "organization", label: "Organization", ltr: true },
+  { key: "asn", label: "ASN", ltr: true },
+  { key: "domain", label: "دامنه شبکه", ltr: true },
+  { key: "currency", label: "واحد پول" },
+  { key: "languages", label: "زبان‌های کشور" },
+  { key: "callingCode", label: "پیش‌شماره کشور", ltr: true },
+  { key: "reverseDns", label: "Reverse DNS", ltr: true }
+];
 
-button,
-input {
-  font: inherit;
-}
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await scanIp(ipInput.value);
+});
 
-button,
-a {
-  -webkit-tap-highlight-color: transparent;
-}
+myIpButton.addEventListener("click", async () => {
+  ipInput.value = "";
+  await scanIp("");
+});
 
-.hero {
-  padding: 72px 20px 110px;
-  text-align: center;
-}
+copyButton.addEventListener("click", copyResult);
 
-.hero__content {
-  max-width: 850px;
-  margin: 0 auto;
-}
+async function scanIp(input) {
+  const ip = input.trim();
 
-.hero__badge {
-  display: inline-flex;
-  padding: 5px 14px;
-  color: #7dd3fc;
-  background: rgba(56, 189, 248, 0.1);
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: bold;
-  letter-spacing: 0.12em;
-}
-
-.hero h1 {
-  margin: 18px 0 4px;
-  font-size: clamp(2.2rem, 7vw, 4.5rem);
-  line-height: 1.25;
-}
-
-.hero p {
-  max-width: 700px;
-  margin: 14px auto 0;
-  color: var(--muted);
-  font-size: 1.05rem;
-}
-
-.container {
-  width: min(1180px, calc(100% - 32px));
-  margin: -65px auto 60px;
-}
-
-.search-panel,
-.result,
-.notice {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(18px);
-}
-
-.search-panel {
-  padding: 25px;
-}
-
-.search-panel label {
-  display: block;
-  margin-bottom: 9px;
-  font-weight: bold;
-}
-
-.search-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 10px;
-}
-
-input {
-  width: 100%;
-  min-width: 0;
-  padding: 13px 16px;
-  color: var(--text);
-  direction: ltr;
-  text-align: left;
-  background: rgba(2, 6, 23, 0.55);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  outline: none;
-  transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease;
-}
-
-input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
-}
-
-button {
-  padding: 12px 20px;
-  color: #03111e;
-  font-weight: bold;
-  cursor: pointer;
-  background: var(--primary);
-  border: 0;
-  border-radius: 12px;
-  transition:
-    transform 150ms ease,
-    background 150ms ease,
-    opacity 150ms ease;
-}
-
-button:hover {
-  background: #7dd3fc;
-  transform: translateY(-1px);
-}
-
-button:disabled {
-  cursor: wait;
-  opacity: 0.55;
-  transform: none;
-}
-
-.secondary-button,
-.copy-button {
-  color: var(--text);
-  background: var(--surface-light);
-  border: 1px solid var(--border);
-}
-
-.secondary-button:hover,
-.copy-button:hover {
-  background: rgba(51, 65, 85, 0.95);
-}
-
-.input-help {
-  margin: 9px 0 0;
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-
-.status {
-  display: none;
-  margin-top: 16px;
-  padding: 11px 14px;
-  border-radius: 10px;
-}
-
-.status.visible {
-  display: block;
-}
-
-.status.loading {
-  color: #bae6fd;
-  background: rgba(14, 165, 233, 0.1);
-  border: 1px solid rgba(14, 165, 233, 0.25);
-}
-
-.status.success {
-  color: #bbf7d0;
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.25);
-}
-
-.status.error {
-  color: #fecaca;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-}
-
-.result {
-  margin-top: 22px;
-  padding: 26px;
-}
-
-.hidden {
-  display: none !important;
-}
-
-.result-header,
-.section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-}
-
-.result-header {
-  margin-bottom: 22px;
-}
-
-.result-header h2,
-.section-heading h2 {
-  margin: 2px 0 0;
-}
-
-#result-ip {
-  direction: ltr;
-  text-align: right;
-  overflow-wrap: anywhere;
-}
-
-.section-label {
-  color: var(--primary);
-  font-size: 0.75rem;
-  font-weight: bold;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.copy-button {
-  flex: none;
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 13px;
-}
-
-.info-card {
-  min-height: 105px;
-  padding: 15px;
-  background: var(--surface-light);
-  border: 1px solid var(--border);
-  border-radius: 15px;
-}
-
-.info-card__label {
-  display: block;
-  margin-bottom: 6px;
-  color: var(--muted);
-  font-size: 0.78rem;
-}
-
-.info-card__value {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 32px;
-  font-size: 0.96rem;
-  font-weight: bold;
-  overflow-wrap: anywhere;
-}
-
-.info-card__value.ltr {
-  direction: ltr;
-  justify-content: flex-end;
-  text-align: left;
-}
-
-.country-flag {
-  width: 28px;
-  height: 20px;
-  object-fit: cover;
-  border-radius: 3px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-}
-
-.security-section,
-.map-section,
-.raw-section {
-  margin-top: 34px;
-}
-
-.security-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 15px;
-}
-
-.security-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 13px 15px;
-  background: var(--surface-light);
-  border: 1px solid var(--border);
-  border-radius: 13px;
-}
-
-.security-value {
-  padding: 3px 9px;
-  border-radius: 999px;
-  font-size: 0.77rem;
-  font-weight: bold;
-}
-
-.security-value.safe {
-  color: #bbf7d0;
-  background: rgba(34, 197, 94, 0.14);
-}
-
-.security-value.danger {
-  color: #fecaca;
-  background: rgba(239, 68, 68, 0.14);
-}
-
-.security-value.unknown {
-  color: #cbd5e1;
-  background: rgba(100, 116, 139, 0.18);
-}
-
-.map-link {
-  color: #7dd3fc;
-  font-size: 0.9rem;
-  text-decoration: none;
-}
-
-.map-link:hover {
-  text-decoration: underline;
-}
-
-#map {
-  width: 100%;
-  height: 430px;
-  margin-top: 15px;
-  overflow: hidden;
-  background: #111827;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-}
-
-.map-notice {
-  margin: 9px 0 0;
-  color: var(--muted);
-  font-size: 0.82rem;
-}
-
-details {
-  overflow: hidden;
-  background: rgba(2, 6, 23, 0.45);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-}
-
-summary {
-  padding: 13px 16px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-pre {
-  max-height: 440px;
-  margin: 0;
-  padding: 16px;
-  overflow: auto;
-  color: #bae6fd;
-  direction: ltr;
-  text-align: left;
-  white-space: pre-wrap;
-  word-break: break-word;
-  border-top: 1px solid var(--border);
-}
-
-.notice {
-  margin-top: 22px;
-  padding: 22px 25px;
-}
-
-.notice h2 {
-  margin: 0 0 7px;
-  font-size: 1.1rem;
-}
-
-.notice p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
-footer {
-  padding: 0 20px 35px;
-  color: var(--muted);
-  text-align: center;
-  font-size: 0.82rem;
-}
-
-@media (max-width: 980px) {
-  .info-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  if (ip && !isValidIp(ip)) {
+    showStatus(
+      "آدرس واردشده IPv4 یا IPv6 معتبر نیست.",
+      "error"
+    );
+    return;
   }
 
-  .security-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  setLoading(true);
+  showStatus("در حال دریافت و تحلیل اطلاعات IP...", "loading");
+  resultElement.classList.add("hidden");
+
+  try {
+    const endpoint = ip
+      ? `${IP_API_BASE}${encodeURIComponent(ip)}`
+      : IP_API_BASE;
+
+    const response = await fetch(endpoint, {
+      headers: {
+        Accept: "application/json"
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`خطای HTTP: ${response.status}`);
+    }
+
+    const geoData = await response.json();
+
+    if (geoData.success === false) {
+      throw new Error(geoData.message || "IP پیدا نشد.");
+    }
+
+    const [countryData, reverseDns] = await Promise.all([
+      fetchCountryData(geoData.country_code),
+      fetchReverseDns(geoData.ip)
+    ]);
+
+    const normalizedData = normalizeResult(
+      geoData,
+      countryData,
+      reverseDns
+    );
+
+    lastResult = normalizedData;
+
+    renderResult(normalizedData);
+    rawOutput.textContent = JSON.stringify(
+      {
+        ipGeolocation: geoData,
+        country: countryData,
+        reverseDns
+      },
+      null,
+      2
+    );
+
+    resultElement.classList.remove("hidden");
+    showStatus("اطلاعات IP با موفقیت دریافت شد.", "success");
+
+    window.setTimeout(() => {
+      resultElement.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }, 100);
+  } catch (error) {
+    console.error(error);
+
+    showStatus(
+      error.message ||
+        "دریافت اطلاعات ناموفق بود. کمی بعد دوباره تلاش کنید.",
+      "error"
+    );
+  } finally {
+    setLoading(false);
   }
 }
 
-@media (max-width: 720px) {
-  .hero {
-    padding-top: 48px;
+async function fetchCountryData(countryCode) {
+  if (!countryCode) {
+    return null;
   }
 
-  .container {
-    width: min(100% - 20px, 1180px);
-  }
+  try {
+    const fields = [
+      "languages",
+      "currencies",
+      "flags",
+      "idd"
+    ].join(",");
 
-  .search-row {
-    grid-template-columns: 1fr 1fr;
-  }
+    const response = await fetch(
+      `${COUNTRY_API_BASE}${encodeURIComponent(countryCode)}` +
+        `?fields=${fields}`,
+      {
+        headers: {
+          Accept: "application/json"
+        }
+      }
+    );
 
-  .search-row input {
-    grid-column: 1 / -1;
-  }
+    if (!response.ok) {
+      return null;
+    }
 
-  .info-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .result-header,
-  .section-heading {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .copy-button {
-    width: 100%;
-  }
-
-  #map {
-    height: 350px;
+    return await response.json();
+  } catch (error) {
+    console.warn("Country API failed:", error);
+    return null;
   }
 }
 
-@media (max-width: 460px) {
-  .search-panel,
-  .result,
-  .notice {
-    padding: 17px;
-    border-radius: 17px;
+async function fetchReverseDns(ip) {
+  if (!ip) {
+    return null;
   }
 
-  .search-row,
-  .info-grid,
-  .security-grid {
-    grid-template-columns: 1fr;
+  try {
+    const reverseName = createReverseDnsName(ip);
+
+    if (!reverseName) {
+      return null;
+    }
+
+    const url =
+      `${DNS_API_BASE}?name=${encodeURIComponent(reverseName)}` +
+      "&type=PTR";
+
+    const response = await fetch(url, {
+      headers: {
+        Accept: "application/dns-json"
+      }
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const dnsData = await response.json();
+
+    if (!Array.isArray(dnsData.Answer)) {
+      return null;
+    }
+
+    const ptrRecords = dnsData.Answer
+      .filter((answer) => answer.type === 12 && answer.data)
+      .map((answer) => answer.data.replace(/\.$/, ""));
+
+    return ptrRecords.length > 0
+      ? ptrRecords.join(", ")
+      : null;
+  } catch (error) {
+    console.warn("Reverse DNS failed:", error);
+    return null;
+  }
+}
+
+function normalizeResult(geo, countryData, reverseDns) {
+  const countryLanguages = countryData?.languages
+    ? Object.values(countryData.languages).join("، ")
+    : null;
+
+  const countryCurrencies = countryData?.currencies
+    ? Object.entries(countryData.currencies)
+        .map(([code, currency]) => {
+          const name = currency.name || code;
+          const symbol = currency.symbol
+            ? ` (${currency.symbol})`
+            : "";
+
+          return `${name}${symbol} - ${code}`;
+        })
+        .join("، ")
+    : null;
+
+  const geoCurrency = geo.currency
+    ? [
+        geo.currency.name,
+        geo.currency.symbol,
+        geo.currency.code
+      ]
+        .filter(Boolean)
+        .join(" - ")
+    : null;
+
+  const callingCode = getCallingCode(
+    countryData,
+    geo.calling_code
+  );
+
+  return {
+    ip: geo.ip,
+    type: geo.type,
+    country: geo.country,
+    countryCode: geo.country_code,
+    continent: geo.continent,
+    city: geo.city,
+    region: geo.region,
+    postal: geo.postal,
+    latitude: geo.latitude,
+    longitude: geo.longitude,
+    timezone: geo.timezone?.id,
+    utc: geo.timezone?.utc,
+    isp: geo.connection?.isp,
+    organization: geo.connection?.org,
+    asn: formatAsn(geo.connection?.asn),
+    domain: geo.connection?.domain,
+    currency: countryCurrencies || geoCurrency,
+    languages: countryLanguages,
+    callingCode,
+    reverseDns,
+    flag:
+      countryData?.flags?.svg ||
+      countryData?.flags?.png ||
+      geo.flag?.img ||
+      null,
+    security: {
+      vpn: getBoolean(geo.security?.vpn),
+      proxy: getBoolean(geo.security?.proxy),
+      tor: getBoolean(geo.security?.tor),
+      hosting: getBoolean(
+        geo.security?.hosting ??
+        geo.security?.hosting_provider
+      )
+    },
+    raw: geo
+  };
+}
+
+function renderResult(data) {
+  resultIp.textContent = data.ip || "نامشخص";
+  infoGrid.replaceChildren();
+
+  for (const field of INFO_FIELDS) {
+    const card = document.createElement("article");
+    card.className = "info-card";
+
+    const label = document.createElement("span");
+    label.className = "info-card__label";
+    label.textContent = field.label;
+
+    const value = document.createElement("div");
+    value.className =
+      `info-card__value${field.ltr ? " ltr" : ""}`;
+
+    if (field.key === "country" && data.flag) {
+      const flag = document.createElement("img");
+      flag.className = "country-flag";
+      flag.src = data.flag;
+      flag.alt = data.country
+        ? `پرچم ${data.country}`
+        : "پرچم کشور";
+      flag.loading = "lazy";
+
+      value.append(flag);
+    }
+
+    const valueText = document.createElement("span");
+    valueText.textContent = displayValue(data[field.key]);
+    value.append(valueText);
+
+    card.append(label, value);
+    infoGrid.append(card);
   }
 
-  .search-row input {
-    grid-column: auto;
+  renderSecurity(data.security);
+  renderMap(data.latitude, data.longitude, data);
+}
+
+function renderSecurity(security) {
+  const items = [
+    { label: "VPN", value: security.vpn },
+    { label: "Proxy", value: security.proxy },
+    { label: "Tor", value: security.tor },
+    { label: "Hosting / Datacenter", value: security.hosting }
+  ];
+
+  securityGrid.replaceChildren();
+
+  for (const item of items) {
+    const element = document.createElement("div");
+    element.className = "security-item";
+
+    const label = document.createElement("span");
+    label.textContent = item.label;
+
+    const value = document.createElement("span");
+    value.className = "security-value";
+
+    if (item.value === true) {
+      value.textContent = "شناسایی شد";
+      value.classList.add("danger");
+    } else if (item.value === false) {
+      value.textContent = "شناسایی نشد";
+      value.classList.add("safe");
+    } else {
+      value.textContent = "نامشخص";
+      value.classList.add("unknown");
+    }
+
+    element.append(label, value);
+    securityGrid.append(element);
+  }
+}
+
+function renderMap(latitude, longitude, data) {
+  const lat = Number(latitude);
+  const lon = Number(longitude);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    osmLink.classList.add("hidden");
+    return;
   }
 
-  #map {
-    height: 300px;
+  if (typeof L === "undefined") {
+    showStatus(
+      "اطلاعات دریافت شد، اما کتابخانه نقشه بارگذاری نشد.",
+      "error"
+    );
+    return;
   }
+
+  if (!map) {
+    map = L.map("map", {
+      scrollWheelZoom: false
+    }).setView([lat, lon], 10);
+
+    L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {
+        maxZoom: 19,
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">' +
+          "OpenStreetMap</a> contributors"
+      }
+    ).addTo(map);
+  } else {
+    map.setView([lat, lon], 10);
+  }
+
+  if (mapMarker) {
+    mapMarker.remove();
+  }
+
+  mapMarker = L.marker([lat, lon]).addTo(map);
+
+  const popup = [
+    data.ip,
+    data.city,
+    data.region,
+    data.country
+  ]
+    .filter(Boolean)
+    .join(" - ");
+
+  mapMarker.bindPopup(escapeHtml(popup)).openPopup();
+
+  osmLink.href =
+    `https://www.openstreetmap.org/?mlat=${lat}` +
+    `&mlon=${lon}#map=10/${lat}/${lon}`;
+
+  osmLink.classList.remove("hidden");
+
+  window.setTimeout(() => {
+    map.invalidateSize();
+  }, 150);
+}
+
+async function copyResult() {
+  if (!lastResult) {
+    return;
+  }
+
+  const lines = INFO_FIELDS.map((field) => {
+    return `${field.label}: ${displayValue(lastResult[field.key])}`;
+  });
+
+  lines.push(
+    `VPN: ${securityText(lastResult.security.vpn)}`,
+    `Proxy: ${securityText(lastResult.security.proxy)}`,
+    `Tor: ${securityText(lastResult.security.tor)}`,
+    `Hosting: ${securityText(lastResult.security.hosting)}`
+  );
+
+  try {
+    await navigator.clipboard.writeText(lines.join("\n"));
+
+    const oldText = copyButton.textContent;
+    copyButton.textContent = "کپی شد";
+
+    window.setTimeout(() => {
+      copyButton.textContent = oldText;
+    }, 1500);
+  } catch (error) {
+    showStatus(
+      "مرورگر اجازه کپی خودکار را نداد.",
+      "error"
+    );
+  }
+}
+
+function createReverseDnsName(ip) {
+  if (isValidIpv4(ip)) {
+    return `${ip.split(".").reverse().join(".")}.in-addr.arpa`;
+  }
+
+  if (isValidIpv6(ip)) {
+    const expanded = expandIpv6(ip);
+
+    if (!expanded) {
+      return null;
+    }
+
+    const nibbles = expanded
+      .replaceAll(":", "")
+      .split("")
+      .reverse()
+      .join(".");
+
+    return `${nibbles}.ip6.arpa`;
+  }
+
+  return null;
+}
+
+function expandIpv6(ip) {
+  let address = ip.toLowerCase().split("%")[0];
+
+  if (address.includes(".")) {
+    const lastColon = address.lastIndexOf(":");
+    const ipv4Part = address.slice(lastColon + 1);
+
+    if (!isValidIpv4(ipv4Part)) {
+      return null;
+    }
+
+    const octets = ipv4Part.split(".").map(Number);
+    const firstGroup = (
+      (octets[0] << 8) |
+      octets[1]
+    ).toString(16);
+
+    const secondGroup = (
+      (octets[2] << 8) |
+      octets[3]
+    ).toString(16);
+
+    address =
+      `${address.slice(0, lastColon)}:${firstGroup}:${secondGroup}`;
+  }
+
+  const halves = address.split("::");
+
+  if (halves.length > 2) {
+    return null;
+  }
+
+  const left = halves[0]
+    ? halves[0].split(":").filter(Boolean)
+    : [];
+
+  const right = halves[1]
+    ? halves[1].split(":").filter(Boolean)
+    : [];
+
+  if (halves.length === 1 && left.length !== 8) {
+    return null;
+  }
+
+  const missingGroups = 8 - left.length - right.length;
+
+  if (
+    missingGroups < 0 ||
+    (halves.length === 2 && missingGroups < 1)
+  ) {
+    return null;
+  }
+
+  const groups = [
+    ...left,
+    ...Array(missingGroups).fill("0"),
+    ...right
+  ];
+
+  if (
+    groups.length !== 8 ||
+    groups.some((group) => !/^[0-9a-f]{1,4}$/i.test(group))
+  ) {
+    return null;
+  }
+
+  return groups
+    .map((group) => group.padStart(4, "0"))
+    .join(":");
+}
+
+function isValidIp(ip) {
+  return isValidIpv4(ip) || isValidIpv6(ip);
+}
+
+function isValidIpv4(ip) {
+  const parts = ip.split(".");
+
+  if (parts.length !== 4) {
+    return false;
+  }
+
+  return parts.every((part) => {
+    if (!/^\d{1,3}$/.test(part)) {
+      return false;
+    }
+
+    if (part.length > 1 && part.startsWith("0")) {
+      return false;
+    }
+
+    const number = Number(part);
+    return number >= 0 && number <= 255;
+  });
+}
+
+function isValidIpv6(ip) {
+  if (
+    !ip.includes(":") ||
+    !/^[0-9a-f:.%]+$/i.test(ip)
+  ) {
+    return false;
+  }
+
+  return expandIpv6(ip) !== null;
+}
+
+function getCallingCode(countryData, fallback) {
+  const root = countryData?.idd?.root;
+  const suffixes = countryData?.idd?.suffixes;
+
+  if (root && Array.isArray(suffixes) && suffixes.length > 0) {
+    return suffixes
+      .slice(0, 5)
+      .map((suffix) => `${root}${suffix}`)
+      .join("، ");
+  }
+
+  return fallback || null;
+}
+
+function getBoolean(value) {
+  return typeof value === "boolean" ? value : null;
+}
+
+function formatAsn(asn) {
+  if (asn === null || asn === undefined || asn === "") {
+    return null;
+  }
+
+  const value = String(asn);
+  return value.toUpperCase().startsWith("AS")
+    ? value
+    : `AS\${value}`;
+}
+
+function displayValue(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return "ارائه نشده";
+  }
+
+  return String(value);
+}
+
+function securityText(value) {
+  if (value === true) {
+    return "شناسایی شد";
+  }
+
+  if (value === false) {
+    return "شناسایی نشد";
+  }
+
+  return "نامشخص";
+}
+
+function showStatus(message, type) {
+  statusElement.textContent = message;
+  statusElement.className = `status visible ${type}`;
+}
+
+function setLoading(loading) {
+  searchButton.disabled = loading;
+  myIpButton.disabled = loading;
+  ipInput.disabled = loading;
+
+  searchButton.textContent = loading
+    ? "در حال بررسی..."
+    : "بررسی IP";
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
