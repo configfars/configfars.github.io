@@ -7,3 +7,4 @@
 # 🛠🔸️Projects🔹️🛠 
 ### 🛠🔸️پروژه ها🔹️🛠
 #### 1_ [IP-SCAN](https://configfars.github.io/IP-SCAN)
+#### 1_ [UUID-Generator](https://configfars.github.io/UUID-Generator)
