@@ -6,4 +6,4 @@
 [Telegram Channel](https://t.me/configfars)
 # 🛠🔸️Projects🔹️🛠 
 ### 🛠🔸️پروژه ها🔹️🛠
-#### 1_ [IP-SCAN](https://configfars.github.io/IP-SC)
+#### 1_ [IP-SCAN](https://configfars.github.io/IP-SCAN)
