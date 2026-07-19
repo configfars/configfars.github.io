@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧠 مدل زبانی من</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app">
+        <!-- سایدبار آموزش -->
+        <aside class="sidebar">
+            <h2>📚 مرکز آموزش</h2>
+            
+            <div class="section">
+                <h3>📝 یاد دادن جمله</h3>
+                <textarea id="teachText" placeholder="جمله‌ای که می‌خوای یاد بدم رو بنویس...&#10;مثال: سلام خوبی چطوری"></textarea>
+                <button id="teachBtn" class="btn-primary">🎓 یاد بگیر</button>
+            </div>
+
+            <div class="section">
+                <h3>🏷️ یاد دادن معنی کلمه</h3>
+                <input type="text" id="wordInput" placeholder="کلمه (مثال: سلام)">
+                <select id="wordType">
+                    <option value="greeting">👋 تحیت (سلام، درود)</option>
+                    <option value="question">❓ سوالی (چطوری، چی شد)</option>
+                    <option value="emotion">😊 احساس (خوبی، عالی)</option>
+                    <option value="noun">📌 اسم (من، تو، علی)</option>
+                    <option value="verb">⚡ فعل (رفتم، کردم)</option>
+                    <option value="connector">🔗 ربط (و، اما، پس)</option>
+                    <option value="ending">🏁 پایان (خداحافظ، موفق باشی)</option>
+                </select>
+                <button id="addWordBtn" class="btn-secondary">➕ اضافه کن</button>
+            </div>
+
+            <div class="section">
+                <h3>📖 دیکشنری من</h3>
+                <div id="dictionary" class="dictionary"></div>
+            </div>
+
+            <div class="section">
+                <h3>📊 آمار مدل</h3>
+                <div id="stats" class="stats"></div>
+            </div>
+
+            <button id="clearBtn" class="btn-danger">🗑️ پاک کردن حافظه</button>
+        </aside>
+
+        <!-- ناحیه چت -->
+        <main class="chat-container">
+            <header class="chat-header">
+                <div class="bot-info">
+                    <div class="bot-avatar">🧠</div>
+                    <div>
+                        <h1>مدل زبانی من</h1>
+                        <span class="status">● یاد می‌گیره...</span>
+                    </div>
+                </div>
+                <div class="mode-toggle">
+                    <label>🎲 تصادفی</label>
+                    <input type="checkbox" id="randomMode" checked>
+                </div>
+            </header>
+
+            <div class="chat-area" id="chatArea">
+                <div class="message bot-message">
+                    <div class="message-bubble">
+                        سلام! 👋 من یک مدل زبانی ساده هستم. جملات فارسی یادم بده تا بتونم مثل آدم حرف بزنم!
+                        <br><br>
+                        💡 <strong>راهنما:</strong> جملات رو با کاما یا نقطه جدا کن. مثال:
+                        <br>
+                        <code>سلام خوبی، چطوری، من خوبم ممنون</code>
+                    </div>
+                    <span class="time">الان</span>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <input type="text" id="userInput" placeholder="با من حرف بزن..." autocomplete="off">
+                <button id="sendBtn">📤</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="scripts.js"></script>
+</body>
+</html>
