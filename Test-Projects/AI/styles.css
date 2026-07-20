@@ -1,10 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap');
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
     --bg: #0a0e1a;
@@ -15,15 +11,9 @@
     --primary-light: #818cf8;
     --secondary: #10b981;
     --danger: #ef4444;
+    --warning: #f59e0b;
     --text: #f3f4f6;
     --text-muted: #9ca3af;
-    --greeting: #f59e0b;
-    --question: #3b82f6;
-    --emotion: #ec4899;
-    --noun: #8b5cf6;
-    --verb: #f97316;
-    --connector: #6b7280;
-    --ending: #ef4444;
 }
 
 body {
@@ -39,21 +29,21 @@ body {
     height: 100vh;
 }
 
-/* ===== سایدبار ===== */
+/* سایدبار */
 .sidebar {
-    width: 350px;
+    width: 400px;
     background: var(--surface);
     border-left: 1px solid var(--border);
     padding: 20px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
 }
 
 .sidebar h2 {
     color: var(--primary);
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     text-align: center;
     padding-bottom: 10px;
     border-bottom: 2px solid var(--primary);
@@ -67,9 +57,15 @@ body {
 }
 
 .section h3 {
-    font-size: 0.95rem;
-    margin-bottom: 12px;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
     color: var(--text-muted);
+}
+
+.hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
 }
 
 textarea, input, select {
@@ -83,12 +79,13 @@ textarea, input, select {
     font-size: 0.9rem;
     outline: none;
     transition: all 0.3s;
-    margin-bottom: 10px;
 }
 
 textarea {
-    min-height: 80px;
+    min-height: 150px;
     resize: vertical;
+    line-height: 1.8;
+    margin-bottom: 10px;
 }
 
 input:focus, textarea:focus, select:focus {
@@ -96,8 +93,20 @@ input:focus, textarea:focus, select:focus {
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
 
-select {
-    cursor: pointer;
+.input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.input-row input {
+    flex: 1;
+    margin: 0;
+}
+
+.input-row select {
+    width: 140px;
+    margin: 0;
 }
 
 button {
@@ -109,6 +118,7 @@ button {
     cursor: pointer;
     transition: all 0.3s;
     width: 100%;
+    margin-bottom: 8px;
 }
 
 .btn-primary {
@@ -136,7 +146,6 @@ button {
     background: transparent;
     color: var(--danger);
     border: 2px solid var(--danger);
-    margin-top: auto;
 }
 
 .btn-danger:hover {
@@ -144,49 +153,73 @@ button {
     color: white;
 }
 
-/* دیکشنری */
-.dictionary {
-    max-height: 200px;
-    overflow-y: auto;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+/* نوار پیشرفت */
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--bg);
+    border-radius: 4px;
+    margin-top: 10px;
+    overflow: hidden;
 }
 
-.word-tag {
-    padding: 4px 10px;
-    border-radius: 20px;
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+#trainStatus {
     font-size: 0.8rem;
-    font-weight: 500;
-    animation: popIn 0.3s ease;
+    color: var(--text-muted);
+    margin-top: 6px;
+    display: block;
 }
 
-@keyframes popIn {
-    from { transform: scale(0); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+/* وضعیت مغز */
+.brain-status {
+    text-align: center;
 }
 
-.word-tag.greeting { background: rgba(245, 158, 11, 0.2); color: var(--greeting); border: 1px solid var(--greeting); }
-.word-tag.question { background: rgba(59, 130, 246, 0.2); color: var(--question); border: 1px solid var(--question); }
-.word-tag.emotion { background: rgba(236, 72, 153, 0.2); color: var(--emotion); border: 1px solid var(--emotion); }
-.word-tag.noun { background: rgba(139, 92, 246, 0.2); color: var(--noun); border: 1px solid var(--noun); }
-.word-tag.verb { background: rgba(249, 115, 22, 0.2); color: var(--verb); border: 1px solid var(--verb); }
-.word-tag.connector { background: rgba(107, 114, 128, 0.2); color: var(--connector); border: 1px solid var(--connector); }
-.word-tag.ending { background: rgba(239, 68, 68, 0.2); color: var(--ending); border: 1px solid var(--ending); }
+.neuron-visual {
+    width: 100%;
+    height: 120px;
+    background: var(--bg);
+    border-radius: 12px;
+    margin-bottom: 10px;
+    position: relative;
+    overflow: hidden;
+}
 
-/* آمار */
-.stats {
+.neuron {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: var(--primary);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+    transition: all 0.5s;
+}
+
+.neuron.active {
+    background: var(--secondary);
+    box-shadow: 0 0 10px var(--secondary);
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.3); }
+}
+
+.stats-text {
     font-size: 0.85rem;
     color: var(--text-muted);
-    line-height: 2;
+    line-height: 1.8;
 }
 
-.stats span {
-    color: var(--primary-light);
-    font-weight: 600;
-}
-
-/* ===== چت ===== */
+/* چت */
 .chat-container {
     flex: 1;
     display: flex;
@@ -196,7 +229,7 @@ button {
 
 .chat-header {
     background: linear-gradient(135deg, var(--surface), var(--surface-light));
-    padding: 20px 30px;
+    padding: 15px 30px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -218,12 +251,16 @@ button {
     align-items: center;
     justify-content: center;
     font-size: 24px;
-    animation: pulse 2s infinite;
+    transition: all 0.3s;
 }
 
-@keyframes pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
-    50% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+.bot-avatar.thinking {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 .bot-info h1 {
@@ -235,18 +272,32 @@ button {
     color: var(--secondary);
 }
 
-.mode-toggle {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.confidence-badge {
+    background: var(--surface-light);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
     color: var(--text-muted);
-    font-size: 0.9rem;
+    border: 1px solid var(--border);
 }
 
-.mode-toggle input {
-    width: auto;
-    margin: 0;
-    accent-color: var(--primary);
+.confidence-badge.high { color: var(--secondary); border-color: var(--secondary); }
+.confidence-badge.medium { color: var(--warning); border-color: var(--warning); }
+.confidence-badge.low { color: var(--danger); border-color: var(--danger); }
+
+/* نوار زمینه */
+.context-bar {
+    background: var(--surface);
+    padding: 10px 30px;
+    display: flex;
+    gap: 30px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.context-bar strong {
+    color: var(--primary-light);
 }
 
 /* ناحیه چت */
@@ -260,7 +311,7 @@ button {
 }
 
 .message {
-    max-width: 70%;
+    max-width: 75%;
     animation: slideUp 0.4s ease;
 }
 
@@ -322,6 +373,7 @@ button {
     background: linear-gradient(135deg, var(--primary), var(--secondary));
     color: white;
     font-size: 20px;
+    margin: 0;
 }
 
 #sendBtn:hover {
@@ -367,16 +419,17 @@ button {
 
 /* ریسپانسیو */
 @media (max-width: 900px) {
-    .sidebar { width: 280px; }
+    .sidebar { width: 320px; }
 }
 
 @media (max-width: 700px) {
     .app { flex-direction: column; }
     .sidebar { 
         width: 100%; 
-        height: 40vh;
+        height: 50vh;
         border-left: none;
         border-bottom: 1px solid var(--border);
     }
-    .chat-container { height: 60vh; }
+    .chat-container { height: 50vh; }
+    .context-bar { flex-direction: column; gap: 5px; }
 }
