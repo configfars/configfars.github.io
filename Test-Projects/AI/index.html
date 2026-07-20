@@ -3,73 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🧠 مدل زبانی من</title>
+    <title>🧠 AI واقعی - درک و فهم</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0/dist/tf.min.js"></script>
 </head>
 <body>
     <div class="app">
-        <!-- سایدبار آموزش -->
+        <!-- پنل آموزش -->
         <aside class="sidebar">
-            <h2>📚 مرکز آموزش</h2>
+            <h2>🎓 مرکز آموزش</h2>
             
             <div class="section">
-                <h3>📝 یاد دادن جمله</h3>
-                <textarea id="teachText" placeholder="جمله‌ای که می‌خوای یاد بدم رو بنویس...&#10;مثال: سلام خوبی چطوری"></textarea>
-                <button id="teachBtn" class="btn-primary">🎓 یاد بگیر</button>
+                <h3>📚 یاد دادن مفهوم</h3>
+                <p class="hint">هر خط = یک جفت (ورودی → پاسخ مورد انتظار)</p>
+                <textarea id="trainData" placeholder="سلام&#10;سلام! خوبی؟ چطوری&#10;&#10;چطوری&#10;من خوبم، تو چطوری؟&#10;&#10;خداحافظ&#10;خداحافظ! موفق باشی"></textarea>
+                <button id="trainBtn" class="btn-primary">🧠 آموزش بده</button>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="trainProgress"></div>
+                </div>
+                <span id="trainStatus">آماده برای آموزش</span>
             </div>
 
             <div class="section">
-                <h3>🏷️ یاد دادن معنی کلمه</h3>
-                <input type="text" id="wordInput" placeholder="کلمه (مثال: سلام)">
-                <select id="wordType">
-                    <option value="greeting">👋 تحیت (سلام، درود)</option>
-                    <option value="question">❓ سوالی (چطوری، چی شد)</option>
-                    <option value="emotion">😊 احساس (خوبی، عالی)</option>
-                    <option value="noun">📌 اسم (من، تو، علی)</option>
-                    <option value="verb">⚡ فعل (رفتم، کردم)</option>
-                    <option value="connector">🔗 ربط (و، اما، پس)</option>
-                    <option value="ending">🏁 پایان (خداحافظ، موفق باشی)</option>
-                </select>
-                <button id="addWordBtn" class="btn-secondary">➕ اضافه کن</button>
+                <h3>🏷️ دیکشنری معانی</h3>
+                <div class="input-row">
+                    <input type="text" id="newWord" placeholder="کلمه">
+                    <select id="wordIntent">
+                        <option value="greeting">👋 سلام/تحیت</option>
+                        <option value="how_are_you">❓ احوالپرسی</option>
+                        <option value="status_good">✅ حال خوب</option>
+                        <option value="status_bad">❌ حال بد</option>
+                        <option value="question">❓ سوال</option>
+                        <option value="name">🏷️ اسم</option>
+                        <option value="thanks">🙏 تشکر</option>
+                        <option value="goodbye">👋 خداحافظ</option>
+                        <option value="unknown">❓ نامشخص</option>
+                    </select>
+                </div>
+                <button id="addWordBtn" class="btn-secondary">➕ اضافه به دیکشنری</button>
             </div>
 
             <div class="section">
-                <h3>📖 دیکشنری من</h3>
-                <div id="dictionary" class="dictionary"></div>
+                <h3>📊 وضعیت مغز</h3>
+                <div id="brainStatus" class="brain-status">
+                    <div class="neuron-visual" id="neuronVisual"></div>
+                    <div class="stats-text" id="statsText"></div>
+                </div>
             </div>
 
             <div class="section">
-                <h3>📊 آمار مدل</h3>
-                <div id="stats" class="stats"></div>
+                <h3>🧹 مدیریت</h3>
+                <button id="saveBtn" class="btn-secondary">💾 ذخیره مغز</button>
+                <button id="loadBtn" class="btn-secondary">📂 بارگذاری مغز</button>
+                <button id="clearBtn" class="btn-danger">🗑️ پاک کردن همه</button>
             </div>
-
-            <button id="clearBtn" class="btn-danger">🗑️ پاک کردن حافظه</button>
         </aside>
 
-        <!-- ناحیه چت -->
+        <!-- چت -->
         <main class="chat-container">
             <header class="chat-header">
                 <div class="bot-info">
-                    <div class="bot-avatar">🧠</div>
+                    <div class="bot-avatar" id="botAvatar">🧠</div>
                     <div>
-                        <h1>مدل زبانی من</h1>
-                        <span class="status">● یاد می‌گیره...</span>
+                        <h1>هوش مصنوعی واقعی</h1>
+                        <span class="status" id="botStatus">● در حال یادگیری...</span>
                     </div>
                 </div>
-                <div class="mode-toggle">
-                    <label>🎲 تصادفی</label>
-                    <input type="checkbox" id="randomMode" checked>
-                </div>
+                <div class="confidence-badge" id="confidenceBadge">🎯 اطمینان: --%</div>
             </header>
+
+            <div class="context-bar" id="contextBar">
+                <span>🎯 قصد تشخیص داده شده: <strong id="detectedIntent">---</strong></span>
+                <span>💭 حافظه: <strong id="memoryStatus">خالی</strong></span>
+            </div>
 
             <div class="chat-area" id="chatArea">
                 <div class="message bot-message">
                     <div class="message-bubble">
-                        سلام! 👋 من یک مدل زبانی ساده هستم. جملات فارسی یادم بده تا بتونم مثل آدم حرف بزنم!
-                        <br><br>
-                        💡 <strong>راهنما:</strong> جملات رو با کاما یا نقطه جدا کن. مثال:
-                        <br>
-                        <code>سلام خوبی، چطوری، من خوبم ممنون</code>
+                        👋 سلام! من یک هوش مصنوعی با <strong>درک واقعی</strong> هستم.<br><br>
+                        💡 <strong>چطور کار می‌کنم:</strong><br>
+                        1. جملات رو تجزیه می‌کنم (Tokenize)<br>
+                        2. معنی هر کلمه رو می‌فهمم (Word Embedding)<br>
+                        3. قصد تو رو تشخیص می‌دم (Intent Classification)<br>
+                        4. بر اساس حافظه و یادگیری پاسخ می‌دم<br><br>
+                        🎓 <strong>برای شروع:</strong> مکالمات رو در پنل سمت راست بهم یاد بده!
                     </div>
                     <span class="time">الان</span>
                 </div>
