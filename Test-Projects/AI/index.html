@@ -3,102 +3,176 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🧠 AI واقعی - درک و فهم</title>
+    <title>🧠 AI ULTIMATE PRO</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- TensorFlow.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0/dist/tf.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Highlight.js for code -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
-    <div class="app">
-        <!-- پنل آموزش -->
-        <aside class="sidebar">
-            <h2>🎓 مرکز آموزش</h2>
-            
+    <!-- نوار کناری -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>🧠 AI ULTIMATE PRO</h2>
+            <button class="close-sidebar" id="closeSidebar">✕</button>
+        </div>
+        
+        <div class="sidebar-content">
+            <!-- آموزش مکالمه -->
             <div class="section">
-                <h3>📚 یاد دادن مفهوم</h3>
-                <p class="hint">هر خط = یک جفت (ورودی → پاسخ مورد انتظار)</p>
-                <textarea id="trainData" placeholder="سلام&#10;سلام! خوبی؟ چطوری&#10;&#10;چطوری&#10;من خوبم، تو چطوری؟&#10;&#10;خداحافظ&#10;خداحافظ! موفق باشی"></textarea>
-                <button id="trainBtn" class="btn-primary">🧠 آموزش بده</button>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="trainProgress"></div>
-                </div>
-                <span id="trainStatus">آماده برای آموزش</span>
+                <h3>🎓 آموزش مکالمه</h3>
+                <p class="hint">هر خط یک پیام (کاربر → ربات)</p>
+                <textarea id="trainConversation" placeholder="سلام&#10;سلام پرهام جان! خوبی؟&#10;&#10;خوبم&#10;خوشحالم که خوبی!"></textarea>
+                <button id="trainConvBtn" class="btn-primary">🧠 یاد بگیر</button>
             </div>
 
+            <!-- آموزش کد -->
             <div class="section">
-                <h3>🏷️ دیکشنری معانی</h3>
-                <div class="input-row">
-                    <input type="text" id="newWord" placeholder="کلمه">
-                    <select id="wordIntent">
-                        <option value="greeting">👋 سلام/تحیت</option>
-                        <option value="how_are_you">❓ احوالپرسی</option>
-                        <option value="status_good">✅ حال خوب</option>
-                        <option value="status_bad">❌ حال بد</option>
+                <h3>💻 آموزش کد</h3>
+                <p class="hint">الگو: // توضیح → کد</p>
+                <textarea id="trainCode" placeholder="// سلام دنیا&#10;console.log('Hello World!');&#10;&#10;// حلقه for&#10;for(let i=0; i<10; i++) {&#10;  console.log(i);&#10;}"></textarea>
+                <button id="trainCodeBtn" class="btn-primary">💻 یاد بگیر</button>
+            </div>
+
+            <!-- دیکشنری -->
+            <div class="section">
+                <h3>🏷️ دیکشنری</h3>
+                <div class="dict-inputs">
+                    <input type="text" id="dictWord" placeholder="کلمه">
+                    <select id="dictCategory">
+                        <option value="greeting">👋 سلام</option>
+                        <option value="how_are_you">❓ احوال</option>
+                        <option value="status_good">✅ خوب</option>
+                        <option value="status_bad">❌ بد</option>
                         <option value="question">❓ سوال</option>
+                        <option value="answer">💬 پاسخ</option>
                         <option value="name">🏷️ اسم</option>
+                        <option value="male_name">👨 اسم مرد</option>
+                        <option value="female_name">👩 اسم زن</option>
                         <option value="thanks">🙏 تشکر</option>
                         <option value="goodbye">👋 خداحافظ</option>
-                        <option value="unknown">❓ نامشخص</option>
+                        <option value="code">💻 کد</option>
+                        <option value="emotion">😊 احساس</option>
+                        <option value="time">⏰ زمان</option>
+                        <option value="place">📍 مکان</option>
+                        <option value="food">🍕 غذا</option>
+                        <option value="animal">🐱 حیوان</option>
+                        <option value="color">🎨 رنگ</option>
+                        <option value="number">🔢 عدد</option>
+                        <option value="connector">🔗 ربط</option>
                     </select>
                 </div>
-                <button id="addWordBtn" class="btn-secondary">➕ اضافه به دیکشنری</button>
+                <button id="addDictBtn" class="btn-secondary">➕ اضافه</button>
+                <div class="dict-list" id="dictList"></div>
             </div>
 
+            <!-- تنظیمات -->
             <div class="section">
-                <h3>📊 وضعیت مغز</h3>
-                <div id="brainStatus" class="brain-status">
-                    <div class="neuron-visual" id="neuronVisual"></div>
-                    <div class="stats-text" id="statsText"></div>
+                <h3>⚙️ تنظیمات</h3>
+                <label class="setting">
+                    <span>🌐 سرچ وب (نیاز به API)</span>
+                    <input type="checkbox" id="webSearchToggle">
+                </label>
+                <input type="text" id="apiKey" placeholder="API Key (اختیاری)" style="margin-top:8px;">
+                
+                <label class="setting">
+                    <span>🎨 حالت تاریک</span>
+                    <input type="checkbox" id="darkMode" checked>
+                </label>
+                
+                <label class="setting">
+                    <span>🔊 صدا</span>
+                    <input type="checkbox" id="voiceToggle">
+                </label>
+            </div>
+
+            <!-- مدیریت مغز -->
+            <div class="section">
+                <h3>🧠 مدیریت مغز</h3>
+                <button id="exportBtn" class="btn-secondary">📤 استخراج مغز</button>
+                <input type="file" id="importFile" accept=".json" hidden>
+                <button id="importBtn" class="btn-secondary">📥 وارد کردن مغز</button>
+                <button id="clearBtn" class="btn-danger">🗑️ پاک کردن</button>
+            </div>
+
+            <!-- آمار -->
+            <div class="section stats-section">
+                <h3>📊 آمار مغز</h3>
+                <div id="brainStats"></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- اصلی -->
+    <main class="main">
+        <!-- هدر -->
+        <header class="header">
+            <button class="menu-btn" id="menuBtn">☰</button>
+            <div class="logo">
+                <span class="logo-icon">🧠</span>
+                <div>
+                    <h1>AI ULTIMATE PRO</h1>
+                    <span class="subtitle">هوش مصنوعی با درک واقعی</span>
                 </div>
             </div>
-
-            <div class="section">
-                <h3>🧹 مدیریت</h3>
-                <button id="saveBtn" class="btn-secondary">💾 ذخیره مغز</button>
-                <button id="loadBtn" class="btn-secondary">📂 بارگذاری مغز</button>
-                <button id="clearBtn" class="btn-danger">🗑️ پاک کردن همه</button>
+            <div class="badges">
+                <span class="badge" id="brainSizeBadge">🧠 --</span>
+                <span class="badge confidence" id="confidenceBadge">🎯 --%</span>
+                <span class="badge" id="userBadge">👤 --</span>
             </div>
-        </aside>
+        </header>
+
+        <!-- نوار وضعیت -->
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="label">🎯 قصد:</span>
+                <span class="value" id="detectedIntent">---</span>
+            </div>
+            <div class="status-item">
+                <span class="label">💭 حافظه:</span>
+                <span class="value" id="memoryContext">خالی</span>
+            </div>
+            <div class="status-item">
+                <span class="label">⚡ حالت:</span>
+                <span class="value" id="aiMode">عادی</span>
+            </div>
+        </div>
 
         <!-- چت -->
-        <main class="chat-container">
-            <header class="chat-header">
-                <div class="bot-info">
-                    <div class="bot-avatar" id="botAvatar">🧠</div>
-                    <div>
-                        <h1>هوش مصنوعی واقعی</h1>
-                        <span class="status" id="botStatus">● در حال یادگیری...</span>
-                    </div>
-                </div>
-                <div class="confidence-badge" id="confidenceBadge">🎯 اطمینان: --%</div>
-            </header>
-
-            <div class="context-bar" id="contextBar">
-                <span>🎯 قصد تشخیص داده شده: <strong id="detectedIntent">---</strong></span>
-                <span>💭 حافظه: <strong id="memoryStatus">خالی</strong></span>
-            </div>
-
-            <div class="chat-area" id="chatArea">
-                <div class="message bot-message">
-                    <div class="message-bubble">
-                        👋 سلام! من یک هوش مصنوعی با <strong>درک واقعی</strong> هستم.<br><br>
-                        💡 <strong>چطور کار می‌کنم:</strong><br>
-                        1. جملات رو تجزیه می‌کنم (Tokenize)<br>
-                        2. معنی هر کلمه رو می‌فهمم (Word Embedding)<br>
-                        3. قصد تو رو تشخیص می‌دم (Intent Classification)<br>
-                        4. بر اساس حافظه و یادگیری پاسخ می‌دم<br><br>
-                        🎓 <strong>برای شروع:</strong> مکالمات رو در پنل سمت راست بهم یاد بده!
+        <div class="chat-area" id="chatArea">
+            <div class="message bot-message welcome">
+                <div class="avatar">🧠</div>
+                <div class="content">
+                    <div class="bubble">
+                        <h3>👋 سلام! من AI ULTIMATE PRO هستم</h3>
+                        <p>من یک هوش مصنوعی با <strong>درک واقعی</strong> هستم:</p>
+                        <ul>
+                            <li>✨ <strong>درک معنی:</strong> هر کلمه رو می‌فهمم چیه</li>
+                            <li>🧠 <strong>حافظه:</strong> اسم، جنسیت، علایق تو رو یادم می‌مونه</li>
+                            <li>💻 <strong>کدنویسی:</strong> بلدم کد بنویسم و اجرا کنم</li>
+                            <li>🎓 <strong>یادگیری:</strong> از هر چیزی که بگی یاد می‌گیرم</li>
+                            <li>🌐 <strong>سرچ:</strong> می‌تونم وب رو سرچ کنم (با API)</li>
+                        </ul>
+                        <p class="tip">💡 <strong>نکته:</strong> بگو "اسم من پرهام است" تا ببینی چطور با اسمت صدام می‌کنم!</p>
                     </div>
                     <span class="time">الان</span>
                 </div>
             </div>
+        </div>
 
-            <div class="input-area">
-                <input type="text" id="userInput" placeholder="با من حرف بزن..." autocomplete="off">
-                <button id="sendBtn">📤</button>
+        <!-- ورودی -->
+        <div class="input-area">
+            <div class="input-wrapper">
+                <textarea id="userInput" placeholder="با من حرف بزن، کد بخو، یا سوال بپرس..." rows="1"></textarea>
+                <div class="input-actions">
+                    <button id="voiceBtn" title="صدا">🎤</button>
+                    <button id="sendBtn" title="ارسال">📤</button>
+                </div>
             </div>
-        </main>
-    </div>
+        </div>
+    </main>
 
     <script src="scripts.js"></script>
 </body>
