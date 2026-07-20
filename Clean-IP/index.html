@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>IP های تمیز</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Tahoma,sans-serif;
+}
+
+body{
+    background:#0b0b0b;
+    color:#fff;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    padding:20px;
+}
+
+.card{
+    width:100%;
+    max-width:900px;
+    background:#151515;
+    border:1px solid #2d2d2d;
+    border-radius:20px;
+    padding:25px;
+    box-shadow:0 0 30px rgba(0,0,0,.6);
+}
+
+h1{
+    text-align:center;
+    margin-bottom:20px;
+    color:#ffffff;
+}
+
+.sub{
+    text-align:center;
+    color:#9ca3af;
+    margin-bottom:25px;
+}
+
+button{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:12px;
+    background:#00c853;
+    color:#fff;
+    font-size:17px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:.25s;
+    margin-bottom:18px;
+}
+
+button:hover{
+    background:#00e676;
+    transform:translateY(-2px);
+}
+
+textarea{
+    width:100%;
+    height:450px;
+    background:#0f0f0f;
+    color:#00ff84;
+    border:1px solid #333;
+    border-radius:15px;
+    padding:15px;
+    font-size:15px;
+    outline:none;
+    resize:vertical;
+}
+
+.footer{
+    text-align:center;
+    color:#777;
+    margin-top:15px;
+    font-size:13px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+<h1>🔐 IP های تمیز</h1>
+
+<div class="sub">
+برای کپی کردن روی دکمه زیر کلیک کنید
+</div>
+
+<button onclick="copyIPs()">
+📋 کپی همه IP ها
+</button>
+
+<textarea id="ips" readonly>
+104.18.191.147
+104.16.52.56
+162.159.135.158
+104.19.210.20
+172.64.188.228
+104.27.12.6
+162.159.236.0
+172.64.38.59
+172.67.218.136
+104.25.182.216
+104.24.187.88
+104.17.199.124
+104.21.2.228
+104.17.4.76
+104.18.206.147
+104.24.74.241
+104.24.9.170
+104.17.135.175
+104.16.132.139
+104.16.223.96
+162.159.231.151
+104.27.50.176
+104.21.234.77
+104.16.244.238
+104.25.135.170
+108.162.196.26
+</textarea>
+
+<div class="footer">
+Dark UI • Clean IP List
+</div>
+
+</div>
+
+<script>
+function copyIPs(){
+    const text=document.getElementById("ips").value;
+
+    navigator.clipboard.writeText(text).then(()=>{
+        const btn=document.querySelector("button");
+        btn.innerHTML="✅ کپی شد";
+        setTimeout(()=>{
+            btn.innerHTML="📋 کپی همه IP ها";
+        },2000);
+    });
+}
+</script>
+
+</body>
+</html>
