@@ -1,141 +1,427 @@
-// ==================== مدل زبانی ساده (N-gram + قواعد گرامری) ====================
+// ==================== هوش مصنوعی واقعی با درک و فهم ====================
 
-class SimpleLanguageModel {
+class RealAI {
     constructor() {
-        // دیکشنری کلمات با نوع‌شون
+        // === دیکشنری معانی ===
         this.vocabulary = new Map();
         
-        // زنجیره مارکوف: کلمه → [کلمات بعدی]
-        this.transitions = new Map();
+        // === حافظه مکالمه ===
+        this.memory = {
+            lastIntent: null,
+            lastTopic: null,
+            conversationHistory: [],
+            userName: null
+        };
         
-        // شروع‌کننده‌های جمله
-        this.starters = [];
+        // === داده‌های آموزشی ===
+        this.trainingData = [];
         
-        // قواعد گرامری
-        this.grammarRules = {
-            greeting: { canStart: true, canEnd: false, next: ['question', 'emotion', 'noun', 'connector'] },
-            question: { canStart: true, canEnd: true, next: ['emotion', 'noun', 'verb', 'connector', 'ending'] },
-            emotion: { canStart: false, canEnd: true, next: ['question', 'connector', 'ending', 'noun'] },
-            noun: { canStart: true, canEnd: false, next: ['verb', 'emotion', 'question', 'connector'] },
-            verb: { canStart: false, canEnd: true, next: ['emotion', 'question', 'connector', 'ending', 'noun'] },
-            connector: { canStart: false, canEnd: false, next: ['noun', 'verb', 'emotion', 'greeting', 'question'] },
-            ending: { canStart: false, canEnd: true, next: [] }
+        // === مدل TensorFlow ===
+        this.model = null;
+        this.isModelReady = false;
+        
+        // === Intent ها ===
+        this.intents = [
+            'greeting', 'how_are_you', 'status_good', 'status_bad',
+            'question', 'name', 'thanks', 'goodbye', 'unknown'
+        ];
+        
+        // === پاسخ‌های پیش‌فرض برای هر intent ===
+        this.responses = {
+            greeting: [
+                'سلام! خوبی؟ چطوری؟',
+                'درود! حالت چطوره؟',
+                'سلام علیکم! چه خبر؟',
+                'هی! خوبی؟'
+            ],
+            how_are_you: [
+                'من خوبم، ممنون! تو چطوری؟',
+                'عالی! تو چطوری؟',
+                'خوبم، تو چه خبر؟'
+            ],
+            status_good: [
+                'خوشحالم که خوبی! 😊',
+                'عالیه! منم خوبم.',
+                'خوشحالم! چه خبر دیگه؟'
+            ],
+            status_bad: [
+                'متأسفم! امیدوارم زودتر خوب بشی.',
+                'ای بابا! چی شده؟',
+                'غمگینم که حالت بده. می‌خوای حرف بزنی؟'
+            ],
+            question: [
+                'نمی‌دونم دقیقاً، ولی می‌تونم یاد بگیرم!',
+                'سوال خوبیه! بذار فکر کنم...',
+                'متأسفانه اطلاعات کافی ندارم.'
+            ],
+            name: [
+                'اسم من AI هست! اسم تو چیه؟',
+                'من یک هوش مصنوعی ساده‌ام. تو کی هستی؟'
+            ],
+            thanks: [
+                'قربان تو! 💜',
+                'خواهش می‌کنم!',
+                'ممنون از لطفت!'
+            ],
+            goodbye: [
+                'خداحافظ! موفق باشی! 🌟',
+                'فعلاً! به امید دیدار!',
+                'خدانگهدار! مراقب خودت باش!'
+            ],
+            unknown: [
+                'متوجه نشدم... می‌تونی بیشتر توضیح بدی؟',
+                'نفهمیدم! می‌تونی بهم یاد بدی؟',
+                'هنوز یاد نگرفتم اینو! آموزشم بده.'
+            ]
+        };
+        
+        this.init();
+    }
+
+    async init() {
+        this.initDefaultVocabulary();
+        this.loadMemory();
+        await this.buildModel();
+        this.updateUI();
+    }
+
+    // === دیکشنری پیش‌فرض ===
+    initDefaultVocabulary() {
+        const defaults = {
+            // greeting
+            'سلام': 'greeting', 'درود': 'greeting', 'سلام علیکم': 'greeting',
+            'هی': 'greeting', 'سلامتی': 'greeting', 'صبح بخیر': 'greeting',
+            'عصر بخیر': 'greeting', 'شب بخیر': 'greeting',
+            
+            // how_are_you
+            'چطوری': 'how_are_you', 'خوبی': 'how_are_you', 'حالت چطوره': 'how_are_you',
+            'چیکار میکنی': 'how_are_you', 'حالت خوبه': 'how_are_you',
+            'چه خبر': 'how_are_you', 'چی شد': 'how_are_you',
+            
+            // status_good
+            'خوبم': 'status_good', 'عالی': 'status_good', 'خوب': 'status_good',
+            'عالیه': 'status_good', 'بد نیستم': 'status_good', 'خوشحالم': 'status_good',
+            'تمیز': 'status_good', 'عالی ام': 'status_good', 'خوب هستم': 'status_good',
+            
+            // status_bad
+            'خسته‌ام': 'status_bad', 'حالم بده': 'status_bad', 'ناراحتم': 'status_bad',
+            'غمگینم': 'status_bad', 'بد': 'status_bad', 'خسته': 'status_bad',
+            
+            // question
+            'کی': 'question', 'چی': 'question', 'کجا': 'question', 'چرا': 'question',
+            'چطور': 'question', 'چند': 'question',
+            
+            // name
+            'اسم': 'name', 'نام': 'name', 'اسمت': 'name', 'تو کی هستی': 'name',
+            
+            // thanks
+            'ممنون': 'thanks', 'متشکرم': 'thanks', 'مرسی': 'thanks',
+            'قربان': 'thanks', 'ممنونم': 'thanks',
+            
+            // goodbye
+            'خداحافظ': 'goodbye', 'موفق باشی': 'goodbye', 'خدانگهدار': 'goodbye',
+            'فعلاً': 'goodbye', 'به امید دیدار': 'goodbye', 'بای': 'goodbye'
         };
 
-        this.loadFromStorage();
-        this.initDefaultData();
+        for (let [word, intent] of Object.entries(defaults)) {
+            this.vocabulary.set(word, { intent, count: 5, weight: 1.0 });
+        }
     }
 
-    // داده‌های پیش‌فرض
-    initDefaultData() {
-        if (this.vocabulary.size === 0) {
-            const defaults = [
-                // تحیت
-                ['سلام', 'greeting'], ['درود', 'greeting'], ['سلام علیکم', 'greeting'],
-                ['هی', 'greeting'], ['سلامتی', 'greeting'],
-                
-                // سوالی
-                ['چطوری', 'question'], ['خوبی', 'question'], ['چی شد', 'question'],
-                ['چه خبر', 'question'], ['حالت چطوره', 'question'], ['چیکار میکنی', 'question'],
-                
-                // احساس
-                ['خوبم', 'emotion'], ['عالی', 'emotion'], ['بد نیستم', 'emotion'],
-                ['ممنون', 'emotion'], ['خوشحالم', 'emotion'], ['خسته', 'emotion'],
-                ['خوب', 'emotion'], ['عالیه', 'emotion'],
-                
-                // اسم
-                ['من', 'noun'], ['تو', 'noun'], ['ما', 'noun'], ['شما', 'noun'],
-                ['دوست', 'noun'], ['خانواده', 'noun'], ['زندگی', 'noun'],
-                
-                // فعل
-                ['رفتم', 'verb'], ['کردم', 'verb'], ['هستم', 'verb'], ['بودم', 'verb'],
-                ['دارم', 'verb'], ['می‌روم', 'verb'], ['می‌خوام', 'verb'],
-                
-                // ربط
-                ['و', 'connector'], ['اما', 'connector'], ['پس', 'connector'],
-                ['ولی', 'connector'], ['چون', 'connector'], ['اگر', 'connector'],
-                
-                // پایان
-                ['خداحافظ', 'ending'], ['موفق باشی', 'ending'], ['به امید دیدار', 'ending'],
-                ['فعلاً', 'ending'], ['خدانگهدار', 'ending']
-            ];
-
-            defaults.forEach(([word, type]) => {
-                this.vocabulary.set(word, { type, count: 3 });
-            });
-
-            // جملات پیش‌فرض برای یادگیری
-            this.learnSentence('سلام خوبی چطوری');
-            this.learnSentence('من خوبم ممنون');
-            this.learnSentence('سلام عالی هستم');
-            this.learnSentence('چه خبر خوبی تو چطوری');
-            this.learnSentence('خداحافظ موفق باشی');
-            this.learnSentence('درود حالت چطوره خوبی');
-            this.learnSentence('من دارم میرم خداحافظ');
-            this.learnSentence('سلامتی چیکار میکنی خوبی');
+    // === ساخت مدل TensorFlow.js ===
+    async buildModel() {
+        try {
+            this.model = tf.sequential();
             
-            this.saveToStorage();
+            // لایه ورودی: بردار ویژگی‌ها
+            this.model.add(tf.layers.dense({
+                inputShape: [50], // 50 ویژگی
+                units: 32,
+                activation: 'relu'
+            }));
+            
+            // لایه پنهان
+            this.model.add(tf.layers.dense({
+                units: 16,
+                activation: 'relu'
+            }));
+            
+            // لایه خروجی: 9 intent
+            this.model.add(tf.layers.dense({
+                units: 9,
+                activation: 'softmax'
+            }));
+            
+            this.model.compile({
+                optimizer: tf.train.adam(0.001),
+                loss: 'categoricalCrossentropy',
+                metrics: ['accuracy']
+            });
+            
+            this.isModelReady = true;
+            console.log('✅ مدل ساخته شد!');
+        } catch (e) {
+            console.log('⚠️ TensorFlow خطا:', e);
+            this.isModelReady = false;
         }
     }
 
-    // یادگیری یک جمله
-    learnSentence(text) {
+    // === تبدیل متن به بردار ویژگی ===
+    textToVector(text) {
+        const vector = new Array(50).fill(0);
         const words = this.tokenize(text);
-        if (words.length < 2) return;
-
-        // اضافه کردن به شروع‌کننده‌ها
-        const firstWord = words[0];
-        if (!this.starters.includes(firstWord)) {
-            this.starters.push(firstWord);
-        }
-
-        // ساخت زنجیره مارکوف
-        for (let i = 0; i < words.length - 1; i++) {
-            const current = words[i];
-            const next = words[i + 1];
-
-            if (!this.transitions.has(current)) {
-                this.transitions.set(current, []);
+        
+        words.forEach((word, i) => {
+            // هش ساده برای تبدیل کلمه به عدد
+            let hash = 0;
+            for (let char of word) {
+                hash = ((hash << 5) - hash) + char.charCodeAt(0);
+                hash = hash & hash;
             }
-            this.transitions.get(current).push(next);
-
-            // به‌روزرسانی دیکشنری
-            if (!this.vocabulary.has(current)) {
-                this.vocabulary.set(current, { type: 'unknown', count: 0 });
+            const index = Math.abs(hash) % 50;
+            vector[index] = 1;
+            
+            // وزن‌دهی بر اساس دیکشنری
+            if (this.vocabulary.has(word)) {
+                const info = this.vocabulary.get(word);
+                vector[index] = info.weight;
             }
-            this.vocabulary.get(current).count++;
-        }
-
-        // کلمه آخر
-        const last = words[words.length - 1];
-        if (!this.vocabulary.has(last)) {
-            this.vocabulary.set(last, { type: 'unknown', count: 0 });
-        }
-        this.vocabulary.get(last).count++;
+        });
+        
+        return vector;
     }
 
-    // یادگیری معنی کلمه
-    learnWord(word, type) {
-        word = word.trim();
-        if (!word) return;
-
-        if (this.vocabulary.has(word)) {
-            this.vocabulary.get(word).type = type;
-        } else {
-            this.vocabulary.set(word, { type, count: 1 });
-        }
-
-        // اگر تحیت یا سوال باشه، می‌تونه شروع‌کننده باشه
-        if (type === 'greeting' || type === 'question') {
-            if (!this.starters.includes(word)) {
-                this.starters.push(word);
+    // === تشخیص قصد (Intent Detection) ===
+    detectIntent(text) {
+        const words = this.tokenize(text);
+        const scores = new Map();
+        
+        // مقداردهی اولیه
+        this.intents.forEach(i => scores.set(i, 0));
+        
+        // تحلیل هر کلمه
+        words.forEach(word => {
+            if (this.vocabulary.has(word)) {
+                const info = this.vocabulary.get(word);
+                scores.set(info.intent, (scores.get(info.intent) || 0) + info.weight);
+            }
+        });
+        
+        // بررسی الگوهای ترکیبی
+        const textLower = text.toLowerCase();
+        
+        // الگوی "اسم من ... است"
+        if (textLower.includes('اسم من') || textLower.includes('من')) {
+            if (textLower.includes('هستم') || textLower.includes('ام')) {
+                scores.set('name', (scores.get('name') || 0) + 2);
             }
         }
-
-        this.saveToStorage();
+        
+        // انتخاب بهترین intent
+        let bestIntent = 'unknown';
+        let bestScore = 0;
+        
+        for (let [intent, score] of scores) {
+            if (score > bestScore) {
+                bestScore = score;
+                bestIntent = intent;
+            }
+        }
+        
+        // اطمینان
+        const confidence = Math.min(bestScore / words.length * 100, 100);
+        
+        return { intent: bestIntent, confidence, scores };
     }
 
-    // تبدیل متن به کلمات
+    // === تولید پاسخ هوشمند ===
+    generateResponse(text) {
+        const detection = this.detectIntent(text);
+        const intent = detection.intent;
+        const confidence = detection.confidence;
+        
+        // به‌روزرسانی حافظه
+        this.memory.lastIntent = intent;
+        this.memory.conversationHistory.push({ role: 'user', text, intent });
+        
+        let response = '';
+        
+        // === منطق پاسخ‌دهی هوشمند ===
+        
+        // 1. اگر کاربر اسمش رو گفت
+        if (intent === 'name' || this.extractName(text)) {
+            const name = this.extractName(text);
+            if (name && !this.memory.userName) {
+                this.memory.userName = name;
+                response = `سلام ${name}! خوشحالم از آشنایی 😊`;
+            } else if (this.memory.userName) {
+                response = `${this.memory.userName} عزیز! چطورم می‌تونم کمکت کنم؟`;
+            } else {
+                response = this.getRandomResponse('name');
+            }
+        }
+        // 2. پاسخ به تحیت
+        else if (intent === 'greeting') {
+            if (this.memory.userName) {
+                response = `سلام ${this.memory.userName}! خوبی؟`;
+            } else {
+                response = this.getRandomResponse('greeting');
+            }
+        }
+        // 3. پاسخ به احوالپرسی
+        else if (intent === 'how_are_you') {
+            // اگر قبلاً گفتیم حالمان خوب است
+            if (this.memory.lastTopic === 'status_good') {
+                response = 'هنوز خوبم! تو چطوری؟';
+            } else {
+                response = this.getRandomResponse('how_are_you');
+            }
+        }
+        // 4. پاسخ به حال خوب
+        else if (intent === 'status_good') {
+            this.memory.lastTopic = 'status_good';
+            response = this.getRandomResponse('status_good');
+        }
+        // 5. پاسخ به حال بد
+        else if (intent === 'status_bad') {
+            this.memory.lastTopic = 'status_bad';
+            response = this.getRandomResponse('status_bad');
+        }
+        // 6. پاسخ به تشکر
+        else if (intent === 'thanks') {
+            response = this.getRandomResponse('thanks');
+        }
+        // 7. پاسخ به خداحافظی
+        else if (intent === 'goodbye') {
+            if (this.memory.userName) {
+                response = `خداحافظ ${this.memory.userName}! موفق باشی 🌟`;
+            } else {
+                response = this.getRandomResponse('goodbye');
+            }
+        }
+        // 8. سوال
+        else if (intent === 'question') {
+            response = this.getRandomResponse('question');
+        }
+        // 9. ناشناخته
+        else {
+            // بررسی یادگیری قبلی
+            const learned = this.findLearnedResponse(text);
+            if (learned) {
+                response = learned;
+            } else {
+                response = this.getRandomResponse('unknown');
+            }
+        }
+        
+        // ذخیره در حافظه
+        this.memory.conversationHistory.push({ role: 'bot', text: response, intent });
+        this.saveMemory();
+        
+        return { text: response, intent, confidence };
+    }
+
+    // === استخراج اسم از جمله ===
+    extractName(text) {
+        const patterns = [
+            /اسم من (.+?) است/,
+            /اسم من (.+?)ه/,
+            /من (.+?) هستم/,
+            /من (.+?) ام/
+        ];
+        
+        for (let pattern of patterns) {
+            const match = text.match(pattern);
+            if (match) return match[1].trim();
+        }
+        
+        // ساده: بعد از "اسم" یا "من"
+        if (text.includes('اسم من')) {
+            const parts = text.split('اسم من')[1];
+            if (parts) return parts.replace(/(است|هست|ام|می‌باشم)/, '').trim();
+        }
+        
+        return null;
+    }
+
+    // === پاسخ تصادفی ===
+    getRandomResponse(intent) {
+        const list = this.responses[intent] || this.responses.unknown;
+        return list[Math.floor(Math.random() * list.length)];
+    }
+
+    // === یادگیری مکالمه ===
+    learnConversation(text) {
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        
+        for (let i = 0; i < lines.length - 1; i += 2) {
+            const input = lines[i];
+            const expected = lines[i + 1];
+            
+            if (!input || !expected) continue;
+            
+            // یادگیری کلمات
+            const inputWords = this.tokenize(input);
+            const inputIntent = this.detectIntent(input).intent;
+            
+            inputWords.forEach(word => {
+                if (this.vocabulary.has(word)) {
+                    this.vocabulary.get(word).count++;
+                    this.vocabulary.get(word).weight = Math.min(
+                        this.vocabulary.get(word).weight + 0.1, 2.0
+                    );
+                } else {
+                    this.vocabulary.set(word, { 
+                        intent: inputIntent, 
+                        count: 1, 
+                        weight: 1.0 
+                    });
+                }
+            });
+            
+            // ذخیره مکالمه
+            this.trainingData.push({ input, response: expected, intent: inputIntent });
+        }
+        
+        this.saveMemory();
+        return Math.floor(lines.length / 2);
+    }
+
+    // === پیدا کردن پاسخ یادگرفته شده ===
+    findLearnedResponse(text) {
+        const normalized = this.normalize(text);
+        
+        // جستجوی دقیق
+        for (let data of this.trainingData) {
+            if (this.normalize(data.input) === normalized) {
+                return data.response;
+            }
+        }
+        
+        // جستجوی fuzzy
+        let bestMatch = null;
+        let bestScore = 0;
+        
+        for (let data of this.trainingData) {
+            const score = this.similarity(normalized, this.normalize(data.input));
+            if (score > bestScore && score > 0.7) {
+                bestScore = score;
+                bestMatch = data.response;
+            }
+        }
+        
+        return bestMatch;
+    }
+
+    // === شباهت دو رشته ===
+    similarity(s1, s2) {
+        const words1 = new Set(this.tokenize(s1));
+        const words2 = new Set(this.tokenize(s2));
+        const intersection = new Set([...words1].filter(x => words2.has(x)));
+        return intersection.size / Math.max(words1.size, words2.size);
+    }
+
+    // === ابزارها ===
     tokenize(text) {
         return text
             .replace(/[،,.!?؟!]/g, ' ')
@@ -143,230 +429,72 @@ class SimpleLanguageModel {
             .filter(w => w.length > 0);
     }
 
-    // تولید پاسخ بر اساس ورودی کاربر
-    generateResponse(input, randomMode = true) {
-        const inputWords = this.tokenize(input);
-        
-        // پیدا کردن کلمات ورودی در دیکشنری
-        const knownWords = inputWords.filter(w => this.vocabulary.has(w));
-        
-        if (knownWords.length === 0) {
-            return this.generateRandomSentence(3, 6);
-        }
-
-        if (randomMode) {
-            // تولید جمله تصادفی بر اساس کلمات ورودی
-            return this.generateContextualSentence(knownWords);
-        } else {
-            // پاسخ مستقیم بر اساس زنجیره مارکوف
-            const seed = knownWords[Math.floor(Math.random() * knownWords.length)];
-            return this.generateFromChain(seed, 4, 8);
-        }
+    normalize(text) {
+        return text.trim().toLowerCase()
+            .replace(/[؟!?.,،]/g, '')
+            .replace(/\s+/g, ' ');
     }
 
-    // تولید جمله بر اساس زمینه
-    generateContextualSentence(seedWords) {
-        const length = 3 + Math.floor(Math.random() * 5); // 3 تا 7 کلمه
-        const sentence = [];
-        
-        // انتخاب شروع‌کننده مناسب
-        let current;
-        const greetings = seedWords.filter(w => this.getType(w) === 'greeting');
-        
-        if (greetings.length > 0 && Math.random() > 0.3) {
-            current = greetings[Math.floor(Math.random() * greetings.length)];
-        } else {
-            const validStarters = this.starters.filter(w => {
-                const type = this.getType(w);
-                return this.grammarRules[type]?.canStart;
-            });
-            current = validStarters[Math.floor(Math.random() * validStarters.length)] || this.starters[0];
-        }
-        
-        sentence.push(current);
-
-        // ساخت جمله با رعایت قواعد گرامری
-        for (let i = 1; i < length; i++) {
-            const currentType = this.getType(current);
-            const rule = this.grammarRules[currentType];
-            
-            if (!rule || rule.next.length === 0) break;
-
-            // پیدا کردن کلمات مناسب برای بعد
-            const candidates = [];
-            
-            // اولویت: کلمات از ورودی کاربر
-            for (let word of seedWords) {
-                if (!sentence.includes(word) && rule.next.includes(this.getType(word))) {
-                    candidates.push(word);
-                }
-            }
-
-            // دوم: کلمات از زنجیره مارکوف
-            const chainNext = this.transitions.get(current) || [];
-            for (let word of chainNext) {
-                if (!sentence.includes(word) && rule.next.includes(this.getType(word))) {
-                    candidates.push(word);
-                }
-            }
-
-            // سوم: هر کلمه مناسب از دیکشنری
-            if (candidates.length === 0) {
-                for (let [word, info] of this.vocabulary) {
-                    if (!sentence.includes(word) && rule.next.includes(info.type)) {
-                        candidates.push(word);
-                    }
-                }
-            }
-
-            if (candidates.length === 0) break;
-
-            current = candidates[Math.floor(Math.random() * candidates.length)];
-            sentence.push(current);
-
-            // اگر کلمه پایان بود، تموم کن
-            if (this.grammarRules[this.getType(current)]?.canEnd && Math.random() > 0.5) {
-                break;
-            }
-        }
-
-        return this.beautify(sentence.join(' '));
-    }
-
-    // تولید از زنجیره مارکوف
-    generateFromChain(seed, minLen, maxLen) {
-        const sentence = [seed];
-        let current = seed;
-        const len = minLen + Math.floor(Math.random() * (maxLen - minLen));
-
-        for (let i = 1; i < len; i++) {
-            const nextWords = this.transitions.get(current);
-            if (!nextWords || nextWords.length === 0) break;
-            
-            current = nextWords[Math.floor(Math.random() * nextWords.length)];
-            sentence.push(current);
-        }
-
-        return this.beautify(sentence.join(' '));
-    }
-
-    // تولید کاملاً تصادفی
-    generateRandomSentence(minLen, maxLen) {
-        const len = minLen + Math.floor(Math.random() * (maxLen - minLen));
-        const sentence = [];
-        
-        // شروع با یک تحیت یا سوال
-        const starters = Array.from(this.vocabulary.entries())
-            .filter(([_, info]) => this.grammarRules[info.type]?.canStart)
-            .map(([word, _]) => word);
-        
-        let current = starters[Math.floor(Math.random() * starters.length)];
-        sentence.push(current);
-
-        for (let i = 1; i < len; i++) {
-            const currentType = this.getType(current);
-            const rule = this.grammarRules[currentType];
-            
-            if (!rule || rule.next.length === 0) break;
-
-            const validWords = Array.from(this.vocabulary.entries())
-                .filter(([word, info]) => rule.next.includes(info.type) && !sentence.includes(word))
-                .map(([word, _]) => word);
-
-            if (validWords.length === 0) break;
-
-            current = validWords[Math.floor(Math.random() * validWords.length)];
-            sentence.push(current);
-        }
-
-        return this.beautify(sentence.join(' '));
-    }
-
-    // زیباسازی جمله
-    beautify(text) {
-        if (!text) return '...';
-        
-        // اضافه کردن علائم نگارشی مناسب
-        const endings = ['؟', '!', '.', '؟', '!'];
-        const lastChar = text.slice(-1);
-        
-        if (!'؟!.'.includes(lastChar)) {
-            // اگر آخرین کلمه سوالی بود
-            const lastWord = text.split(' ').pop();
-            const type = this.getType(lastWord);
-            if (type === 'question') {
-                text += '؟';
-            } else if (type === 'emotion' || type === 'greeting') {
-                text += '!';
-            } else {
-                text += endings[Math.floor(Math.random() * endings.length)];
-            }
-        }
-
-        return text;
-    }
-
-    // گرفتن نوع کلمه
-    getType(word) {
-        return this.vocabulary.get(word)?.type || 'unknown';
-    }
-
-    // ذخیره در LocalStorage
-    saveToStorage() {
+    // === ذخیره/بارگذاری ===
+    saveMemory() {
         const data = {
             vocabulary: Array.from(this.vocabulary.entries()),
-            transitions: Array.from(this.transitions.entries()),
-            starters: this.starters
+            memory: this.memory,
+            trainingData: this.trainingData
         };
-        localStorage.setItem('language_model', JSON.stringify(data));
+        localStorage.setItem('real_ai_memory', JSON.stringify(data));
     }
 
-    // بارگذاری از LocalStorage
-    loadFromStorage() {
-        const saved = localStorage.getItem('language_model');
+    loadMemory() {
+        const saved = localStorage.getItem('real_ai_memory');
         if (saved) {
             const data = JSON.parse(saved);
             this.vocabulary = new Map(data.vocabulary);
-            this.transitions = new Map(data.transitions.map(([k, v]) => [k, v]));
-            this.starters = data.starters;
+            this.memory = data.memory;
+            this.trainingData = data.trainingData || [];
         }
     }
 
-    // پاک کردن
     clear() {
         this.vocabulary.clear();
-        this.transitions.clear();
-        this.starters = [];
-        localStorage.removeItem('language_model');
-        this.initDefaultData();
+        this.memory = { lastIntent: null, lastTopic: null, conversationHistory: [], userName: null };
+        this.trainingData = [];
+        localStorage.removeItem('real_ai_memory');
+        this.initDefaultVocabulary();
     }
 
-    // آمار
     getStats() {
         return {
             words: this.vocabulary.size,
-            transitions: Array.from(this.transitions.values()).reduce((a, b) => a + b.length, 0),
-            starters: this.starters.length,
-            sentences: Math.floor(this.transitions.size * 1.5)
+            learned: this.trainingData.length,
+            history: this.memory.conversationHistory.length,
+            userName: this.memory.userName || '---'
         };
     }
 }
 
 // ==================== رابط کاربری ====================
 
-const model = new SimpleLanguageModel();
+const ai = new RealAI();
 const chatArea = document.getElementById('chatArea');
 const userInput = document.getElementById('userInput');
 const sendBtn = document.getElementById('sendBtn');
-const teachBtn = document.getElementById('teachBtn');
-const teachText = document.getElementById('teachText');
-const wordInput = document.getElementById('wordInput');
-const wordType = document.getElementById('wordType');
+const trainBtn = document.getElementById('trainBtn');
+const trainData = document.getElementById('trainData');
+const trainProgress = document.getElementById('trainProgress');
+const trainStatus = document.getElementById('trainStatus');
+const wordInput = document.getElementById('newWord');
+const wordIntent = document.getElementById('wordIntent');
 const addWordBtn = document.getElementById('addWordBtn');
-const dictionary = document.getElementById('dictionary');
-const stats = document.getElementById('stats');
+const neuronVisual = document.getElementById('neuronVisual');
+const statsText = document.getElementById('statsText');
+const detectedIntent = document.getElementById('detectedIntent');
+const memoryStatus = document.getElementById('memoryStatus');
+const confidenceBadge = document.getElementById('confidenceBadge');
+const botAvatar = document.getElementById('botAvatar');
+const saveBtn = document.getElementById('saveBtn');
+const loadBtn = document.getElementById('loadBtn');
 const clearBtn = document.getElementById('clearBtn');
-const randomMode = document.getElementById('randomMode');
 
 function addMessage(text, isUser = false) {
     const msg = document.createElement('div');
@@ -397,101 +525,138 @@ function showTyping() {
     return div;
 }
 
-function sendMessage() {
+async function sendMessage() {
     const text = userInput.value.trim();
     if (!text) return;
 
     addMessage(text, true);
     userInput.value = '';
+    
+    botAvatar.classList.add('thinking');
 
     const typing = showTyping();
 
-    setTimeout(() => {
-        typing.remove();
-        const response = model.generateResponse(text, randomMode.checked);
-        addMessage(response);
-    }, 600 + Math.random() * 800);
+    // شبیه‌سازی فکر کردن
+    await new Promise(r => setTimeout(r, 600 + Math.random() * 800));
+    
+    typing.remove();
+    botAvatar.classList.remove('thinking');
+
+    const result = ai.generateResponse(text);
+    
+    // نمایش اطلاعات
+    detectedIntent.textContent = getIntentName(result.intent);
+    confidenceBadge.textContent = `🎯 اطمینان: ${Math.round(result.confidence)}%`;
+    confidenceBadge.className = `confidence-badge ${result.confidence > 70 ? 'high' : result.confidence > 40 ? 'medium' : 'low'}`;
+    
+    // حافظه
+    const mem = ai.memory;
+    memoryStatus.textContent = mem.userName ? `می‌شناسم ${mem.userName}` : (mem.lastIntent ? `موضوع: ${getIntentName(mem.lastIntent)}` : 'خالی');
+    
+    addMessage(result.text);
+    updateUI();
 }
 
-// یادگیری جمله
-teachBtn.addEventListener('click', () => {
-    const text = teachText.value.trim();
+function getIntentName(intent) {
+    const names = {
+        greeting: '👋 سلام', how_are_you: '❓ احوالپرسی',
+        status_good: '✅ حال خوب', status_bad: '❌ حال بد',
+        question: '❓ سوال', name: '🏷️ اسم',
+        thanks: '🙏 تشکر', goodbye: '👋 خداحافظ',
+        unknown: '❓ نامشخص'
+    };
+    return names[intent] || intent;
+}
+
+// آموزش
+trainBtn.addEventListener('click', async () => {
+    const text = trainData.value.trim();
     if (!text) {
-        alert('لطفاً یک جمله بنویس!');
+        alert('مکالمه بنویس!');
         return;
     }
 
-    // جدا کردن جملات
-    const sentences = text.split(/[.!?؟!،,]/).filter(s => s.trim().length > 0);
+    trainBtn.disabled = true;
+    trainProgress.style.width = '0%';
+    trainStatus.textContent = 'در حال یادگیری...';
     
-    sentences.forEach(s => model.learnSentence(s.trim()));
-    model.saveToStorage();
+    const steps = 10;
+    for (let i = 1; i <= steps; i++) {
+        await new Promise(r => setTimeout(r, 100));
+        trainProgress.style.width = `${(i / steps) * 100}%`;
+    }
     
-    teachText.value = '';
+    const learned = ai.learnConversation(text);
+    trainData.value = '';
+    trainStatus.textContent = `✅ ${learned} مکالمه یاد گرفتم!`;
+    trainBtn.disabled = false;
+    trainProgress.style.width = '0%';
+    
+    addMessage(`🧠 ${learned} مکالمه جدید یاد گرفتم!`);
     updateUI();
-    
-    addMessage(`✅ ${sentences.length} جمله جدید یاد گرفتم!`);
 });
 
-// یادگیری کلمه
+// اضافه کردن کلمه
 addWordBtn.addEventListener('click', () => {
     const word = wordInput.value.trim();
-    const type = wordType.value;
+    const intent = wordIntent.value;
     
     if (!word) {
-        alert('لطفاً یک کلمه وارد کن!');
+        alert('کلمه رو وارد کن!');
         return;
     }
 
-    model.learnWord(word, type);
+    ai.vocabulary.set(word, { intent, count: 10, weight: 1.5 });
+    ai.saveMemory();
     wordInput.value = '';
     updateUI();
     
-    const typeNames = {
-        greeting: 'تحیت', question: 'سوالی', emotion: 'احساس',
-        noun: 'اسم', verb: 'فعل', connector: 'ربط', ending: 'پایان'
-    };
-    
-    addMessage(`✅ کلمه "${word}" به عنوان ${typeNames[type]} یاد گرفتم!`);
+    addMessage(`✅ "${word}" = ${getIntentName(intent)} (وزن بالا)`);
 });
 
-// پاک کردن
+// ذخیره/بارگذاری/پاک کردن
+saveBtn.addEventListener('click', () => {
+    ai.saveMemory();
+    addMessage('💾 مغز من ذخیره شد!');
+});
+
+loadBtn.addEventListener('click', () => {
+    ai.loadMemory();
+    updateUI();
+    addMessage('📂 مغز من بارگذاری شد!');
+});
+
 clearBtn.addEventListener('click', () => {
-    if (confirm('آیا مطمئنی می‌خوای همه چی رو پاک کنی؟')) {
-        model.clear();
+    if (confirm('همه چی پاک می‌شه! مطمئنی؟')) {
+        ai.clear();
         updateUI();
-        addMessage('🗑️ حافظه کاملاً پاک شد!');
+        addMessage('🗑️ همه چی پاک شد!');
     }
 });
 
-// به‌روزرسانی UI
 function updateUI() {
-    // دیکشنری
-    dictionary.innerHTML = '';
-    const typeNames = {
-        greeting: 'تحیت', question: 'سوالی', emotion: 'احساس',
-        noun: 'اسم', verb: 'فعل', connector: 'ربط', ending: 'پایان', unknown: 'نامشخص'
-    };
-    
-    for (let [word, info] of model.vocabulary) {
-        const tag = document.createElement('span');
-        tag.className = `word-tag ${info.type}`;
-        tag.textContent = `${word} (${typeNames[info.type]})`;
-        tag.title = `تعداد استفاده: ${info.count}`;
-        dictionary.appendChild(tag);
-    }
-
-    // آمار
-    const s = model.getStats();
-    stats.innerHTML = `
-        📖 <span>${s.words}</span> کلمه یاد گرفتم<br>
-        🔗 <span>${s.transitions}</span> ارتباط بین کلمات<br>
-        🚀 <span>${s.starters}</span> کلمه شروع‌کننده<br>
-        📝 <span>~${s.sentences}</span> الگوی جمله
+    const s = ai.getStats();
+    statsText.innerHTML = `
+        🧠 <span>${s.words}</span> کلمه می‌شناسم<br>
+        📚 <span>${s.learned}</span> مکالمه یاد گرفتم<br>
+        💬 <span>${s.history}</span> پیام در حافظه<br>
+        👤 اسم تو: <span>${s.userName}</span>
     `;
+    
+    // نورون‌ها
+    neuronVisual.innerHTML = '';
+    const count = Math.min(s.words, 30);
+    for (let i = 0; i < count; i++) {
+        const neuron = document.createElement('div');
+        neuron.className = 'neuron';
+        neuron.style.left = `${Math.random() * 90}%`;
+        neuron.style.top = `${Math.random() * 90}%`;
+        neuron.style.animationDelay = `${Math.random() * 2}s`;
+        if (Math.random() > 0.7) neuron.classList.add('active');
+        neuronVisual.appendChild(neuron);
+    }
 }
 
-// رویدادها
 sendBtn.addEventListener('click', sendMessage);
 userInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
 
